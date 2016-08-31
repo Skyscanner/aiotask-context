@@ -21,7 +21,7 @@ For example, in your application, to share the `request_id` between all the call
 ```python
 import asyncio
 
-from asyncio_context import context
+from aiotask_context import context
 
 
 async def my_coro_1(request_id):
@@ -47,7 +47,7 @@ As you can see, this code smells a bit and feels like repeating yourself a lot. 
 ```python
 import asyncio
 
-from asyncio_context import context
+from aiotask_context import context
 
 
 async def my_coro_1():
@@ -74,7 +74,7 @@ If you execute this code, you will a "1234" printed in your display. You can eve
 ```python
 import asyncio
 
-from asyncio_context import context
+from aiotask_context import context
 
 
 async def my_coro_1():
