@@ -1,10 +1,14 @@
 import asyncio
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def get(key, default=None):
     """
     Retrieves the value stored in key from the Task.context dict. If key does not exist,
-    default will be returned
+    or there is no event loop running, default will be returned
 
     :param key: identifier for accessing the context dict.
     :param default: None by default, returned in case key is not found.
@@ -22,8 +26,13 @@ def set(key, value):
 
     :param key: identifier for accessing the context dict.
     :param value: value to store inside context[key].
+    :raises
     """
-    try:
-        asyncio.Task.current_task().context[key] = value
-    except AttributeError:
-        asyncio.Task.current_task().context = {key: value}
+    task = asyncio.Task.current_task()
+    if task:
+        try:
+            asyncio.Task.current_task().context[key] = value
+        except AttributeError:
+            asyncio.Task.current_task().context = {key: value}
+    else:
+        raise ValueError("No event loop found, key %s couldn't be set" % key)
