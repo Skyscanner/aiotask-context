@@ -36,3 +36,17 @@ def set(key, value):
             asyncio.Task.current_task().context = {key: value}
     else:
         raise ValueError("No event loop found, key %s couldn't be set" % key)
+
+
+def ensure_future(coro_or_future, *, loop=None):
+    """
+    Wraps asyncio.ensure_future to propagate the context to the child Task
+    """
+    task = asyncio.ensure_future(coro_or_future, loop=None)
+    try:
+        context = asyncio.Task.current_task().context
+        task.context = context
+    except AttributeError:
+        pass
+
+    return task
