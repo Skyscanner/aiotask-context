@@ -1,4 +1,5 @@
 import asyncio
+import random
 import pytest
 import uuid
 
@@ -8,15 +9,26 @@ from aiotask_context import context
 
 
 @asyncio.coroutine
-def dummy1(a, b):
-    return a, b, context.get("key")
+def dummy3():
+    yield from asyncio.sleep(random.uniform(0, 2))
+    return context.get("key")
 
 
 @asyncio.coroutine
-def dummy2(n_tasks):
+def dummy2(a, b):
+    yield from asyncio.sleep(random.uniform(0, 2))
+    res = context.get("key")
+    yield from asyncio.sleep(random.uniform(0, 2))
+    res1 = yield from dummy3()
+    assert res == res1
+    return a, b, res
+
+
+@asyncio.coroutine
+def dummy1(n_tasks):
     context.set("key", str(uuid.uuid4()))
     tasks = [
-        context.ensure_future(dummy1(id(asyncio.Task.current_task()), n)) for n in range(n_tasks)]
+        context.ensure_future(dummy2(id(asyncio.Task.current_task()), n)) for n in range(n_tasks)]
     results = yield from asyncio.gather(*tasks)
     info = defaultdict(list)
     for taskid, n, key in results:
@@ -29,7 +41,7 @@ def dummy2(n_tasks):
 @asyncio.coroutine
 def test_ensure_future_concurrent():
     n_tasks = 10
-    results = yield from asyncio.gather(*[dummy2(n_tasks=n_tasks) for x in range(1000)])
+    results = yield from asyncio.gather(*[dummy1(n_tasks=n_tasks) for x in range(1000)])
     for r in results:
         assert len(r) == 1
         for key, value in r.items():
