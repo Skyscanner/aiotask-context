@@ -50,7 +50,7 @@ def test_ensure_future_concurrent():
 
 @pytest.mark.asyncio
 @asyncio.coroutine
-def test_ensurefuture_context_mutability():
+def test_ensurefuture_context_propagation():
     context.set("key", "value")
 
     @asyncio.coroutine
@@ -61,5 +61,37 @@ def test_ensurefuture_context_mutability():
 
     yield from context.ensure_future(change_context())
 
+    assert context.get("key") == "what"
+    assert context.get("other") == "data"
+
+
+@pytest.mark.asyncio
+@asyncio.coroutine
+def test_waitfor_context_propagation():
+    context.set("key", "value")
+
+    @asyncio.coroutine
+    def change_context():
+        assert context.get("key") == "value"
+        context.set("key", "what")
+        context.set("other", "data")
+
+    yield from context.wait_for(change_context(), 1)
+    assert context.get("key") == "what"
+    assert context.get("other") == "data"
+
+
+@pytest.mark.asyncio
+@asyncio.coroutine
+def test_gather_context_propagation():
+    context.set("key", "value")
+
+    @asyncio.coroutine
+    def change_context():
+        assert context.get("key") == "value"
+        context.set("key", "what")
+        context.set("other", "data")
+
+    yield from context.gather(change_context())
     assert context.get("key") == "what"
     assert context.get("other") == "data"

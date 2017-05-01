@@ -42,7 +42,7 @@ def ensure_future(coro_or_future, *, loop=None):
     """
     Wraps asyncio.ensure_future to propagate the context to the child Task
     """
-    task = asyncio.ensure_future(coro_or_future, loop=None)
+    task = asyncio.ensure_future(coro_or_future, loop=loop)
     try:
         context = asyncio.Task.current_task().context
         task.context = context
@@ -50,3 +50,19 @@ def ensure_future(coro_or_future, *, loop=None):
         pass
 
     return task
+
+
+@asyncio.coroutine
+def wait_for(fut, timeout, *, loop=None):
+    """
+    Wraps asyncio.wait_for to propagate the context to the child Task
+    """
+    res = yield from asyncio.wait_for(ensure_future(fut), timeout, loop=loop)
+    return res
+
+
+@asyncio.coroutine
+def gather(*coros_or_futures, loop=None, return_exceptions=False):
+    return asyncio.gather(
+        *[ensure_future(coro) for coro in coros_or_futures],
+        loop=loop, return_exceptions=return_exceptions)

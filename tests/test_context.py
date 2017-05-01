@@ -7,8 +7,8 @@ from aiotask_context import context
 
 
 @asyncio.coroutine
-def dummy():
-    pass
+def dummy(t=0):
+    yield from asyncio.sleep(t)
 
 
 class TestContext:
@@ -59,3 +59,26 @@ class TestContext:
     @asyncio.coroutine
     def test_ensurefuture_returns_task(self):
         assert isinstance(context.ensure_future(dummy()), asyncio.Task)
+
+    @pytest.mark.asyncio
+    @asyncio.coroutine
+    def test_waitfor_calls_asynciowaitfor(self):
+        with mock.patch("asyncio.wait_for") as wait_for:
+            dummy_call = dummy()
+            yield from context.wait_for(dummy_call, 3)
+            wait_for.assert_called_with(mock.ANY, 3, loop=None)
+
+    @pytest.mark.asyncio
+    @asyncio.coroutine
+    def test_waitfor_works(self):
+        with pytest.raises(asyncio.TimeoutError):
+            yield from context.wait_for(dummy(1), 0.001)
+
+    @pytest.mark.asyncio
+    @asyncio.coroutine
+    def test_gather_calls_asynciogather(self):
+        with mock.patch("asyncio.gather") as gather:
+            dummy1 = dummy()
+            dummy2 = dummy()
+            yield from context.gather(dummy1, dummy2)
+            assert len(gather.call_args_list[0][0]) == 2
