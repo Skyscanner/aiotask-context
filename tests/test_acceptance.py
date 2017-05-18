@@ -28,7 +28,7 @@ def dummy2(a, b):
 def dummy1(n_tasks):
     context.set("key", str(uuid.uuid4()))
     tasks = [
-        context.ensure_future(dummy2(id(asyncio.Task.current_task()), n)) for n in range(n_tasks)]
+        asyncio.ensure_future(dummy2(id(asyncio.Task.current_task()), n)) for n in range(n_tasks)]
     results = yield from asyncio.gather(*tasks)
     info = defaultdict(list)
     for taskid, n, key in results:
@@ -59,7 +59,7 @@ def test_ensurefuture_context_propagation():
         context.set("key", "what")
         context.set("other", "data")
 
-    yield from context.ensure_future(change_context())
+    yield from asyncio.ensure_future(change_context())
 
     assert context.get("key") == "what"
     assert context.get("other") == "data"
@@ -76,7 +76,7 @@ def test_waitfor_context_propagation():
         context.set("key", "what")
         context.set("other", "data")
 
-    yield from context.wait_for(change_context(), 1)
+    yield from asyncio.wait_for(change_context(), 1)
     assert context.get("key") == "what"
     assert context.get("other") == "data"
 
@@ -92,6 +92,6 @@ def test_gather_context_propagation():
         context.set("key", "what")
         context.set("other", "data")
 
-    yield from context.gather(change_context())
+    yield from asyncio.gather(change_context())
     assert context.get("key") == "what"
     assert context.get("other") == "data"

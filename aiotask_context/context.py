@@ -14,10 +14,11 @@ def get(key, default=None):
     :param default: None by default, returned in case key is not found.
     :return: Value stored inside the dict[key].
     """
-    try:
-        return asyncio.Task.current_task().context[key]
-    except (KeyError, AttributeError):
-        return default
+    task = asyncio.Task.current_task()
+    if task:
+        return asyncio.Task.current_task().context.get(key, default)
+    else:
+        raise ValueError("No event loop found, key %s couldn't be set" % key)
 
 
 def set(key, value):
@@ -30,39 +31,6 @@ def set(key, value):
     """
     task = asyncio.Task.current_task()
     if task:
-        try:
-            asyncio.Task.current_task().context[key] = value
-        except AttributeError:
-            asyncio.Task.current_task().context = {key: value}
+        asyncio.Task.current_task().context[key] = value
     else:
         raise ValueError("No event loop found, key %s couldn't be set" % key)
-
-
-def ensure_future(coro_or_future, *, loop=None):
-    """
-    Wraps asyncio.ensure_future to propagate the context to the child Task
-    """
-    task = asyncio.ensure_future(coro_or_future, loop=loop)
-    try:
-        context = asyncio.Task.current_task().context
-        task.context = context
-    except AttributeError:
-        pass
-
-    return task
-
-
-@asyncio.coroutine
-def wait_for(fut, timeout, *, loop=None):
-    """
-    Wraps asyncio.wait_for to propagate the context to the child Task
-    """
-    res = yield from asyncio.wait_for(ensure_future(fut), timeout, loop=loop)
-    return res
-
-
-@asyncio.coroutine
-def gather(*coros_or_futures, loop=None, return_exceptions=False):
-    return asyncio.gather(
-        *[ensure_future(coro) for coro in coros_or_futures],
-        loop=loop, return_exceptions=return_exceptions)
