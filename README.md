@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Skyscanner/aiotask-context.svg?branch=master)](https://travis-ci.org/Skyscanner/aiotask-context)
 
-Store context information within the [asyncio.Task](https://docs.python.org/3/library/asyncio-task.html#task) object. For more information about why this package was developed, please read the blog post [From Flask to aiohttp](http://codevoyagers.com/2016/08/24/from-flask-to-aiohttp/).
+Store context information within the [asyncio.Task](https://docs.python.org/3/library/asyncio-task.html#task) object. For more information about why this package was developed, please read the blog post [From Flask to aiohttp](http://codevoyagers.com/2016/09/01/from-flask-to-aiohttp/).
 
 ## Installation
 
