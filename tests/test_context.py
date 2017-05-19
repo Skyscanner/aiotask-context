@@ -1,7 +1,6 @@
 import pytest
 import asyncio
-
-from aiotask_context import context
+import aiotask_context as context
 
 
 @asyncio.coroutine
