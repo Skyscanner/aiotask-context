@@ -5,7 +5,7 @@ import uuid
 
 from collections import defaultdict
 
-from aiotask_context import context
+import aiotask_context as context
 
 
 @asyncio.coroutine

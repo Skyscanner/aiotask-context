@@ -6,22 +6,25 @@ Store context information within the [asyncio.Task](https://docs.python.org/3/li
 
 ## Installation
 
-The package is not yet published to pypi. You can install it by doing:
-
 ```bash
-pip install -e git+https://github.com/Skyscanner/aiotask-context#egg=aiotask-context
+pip install aiotask_context
 ```
 
 ## Usage
 
 This package allows to store context information inside the [asyncio.Task](https://docs.python.org/3/library/asyncio-task.html#task) object. A typical use case for it is to pass information between coroutine calls without the need to do it explicitly using the called coroutine args.
 
-For example, in your application, to share the `request_id` between all the calls, you should do the following:
+
+What this package is **NOT** for:
+
+ - Don't fall into the bad pattern of storing everything your services need inside, this should only be used for objects or data that is needed by all or almost all the parts of your code where propagating it through args doesn't scale.
+ - The context is a `dict` object so you can store any object you want inside. This opens the door to using it to change variables inside in the middle of an execution so other coroutines behave differently or other dirty usages. This is really **discouraged**.
+
+
+Now, a (simplified) example where you could apply this: In your application, to share the `request_id` between all the calls, you should do the following:
 
 ```python
 import asyncio
-
-from aiotask_context import context
 
 
 async def my_coro_1(request_id):
@@ -42,61 +45,65 @@ if __name__ == '__main__':
   loop.run_until_complete(my_coro_3())
 ```
 
-As you can see, this code smells a bit and feels like repeating yourself a lot. With this library, you can just do the following:
+As you can see, this code smells a bit and feels like repeating yourself a lot (think about this example as if you had current API running in a framework and you needed the `request_id` everywhere to log it properly). With `aiotask_context` you can do:
 
 ```python
 import asyncio
-
-from aiotask_context import context
+import aiotask_context as context
 
 
 async def my_coro_1():
-  print(context.get("request_id", default="Unknown"))
+    print(context.get("request_id", default="Unknown"))
 
 
 async def my_coro_2():
-  await my_coro_1()
+    print(context.get("request_id", default="Unknown"))
+    await my_coro_1()
 
 
 async def my_coro_3():
-  context.set(key="request_id", value="1234")
-  await my_coro_2()
+    context.set(key="request_id", value="1234")
+    await my_coro_2()
 
 
 if __name__ == '__main__':
-  loop = asyncio.get_event_loop()
-  loop.run_until_complete(my_coro_3())
+    loop = asyncio.get_event_loop()
+    loop.set_task_factory(context.task_factory)
+    loop.run_until_complete(my_coro_3())
 ```
 
-If you execute this code, you will a "1234" printed in your display. You can even change the value in the middle of the execution to decide actions in the middle of the flow:
+It also keeps the context between the calls like `ensure_future`, `wait_for`, `gather`, etc. That's why you have to change the [task factory](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.AbstractEventLoop.set_task_factory):
 
 
 ```python
 import asyncio
+import aiotask_context as context
 
-from aiotask_context import context
 
+async def my_coro_0():
+    print("0: " + context.get("status"))
 
 async def my_coro_1():
-  asyncio.sleep(5)
-  context.set("status", "DONE")
+    context.set("status", "DONE")
 
 
 async def my_coro_2():
-  context.set("status", "RUNNING")
-  print(context.get("status"))
-  await my_coro_1()
-  print(context.get("status"))
+    context.set("status", "RUNNING")
+    print("2: " + context.get("status"))
+    await asyncio.gather(asyncio.ensure_future(my_coro_1()), my_coro_0())
+    print("2: " + context.get("status"))
 
 
 if __name__ == '__main__':
-  loop = asyncio.get_event_loop()
-  loop.run_until_complete(my_coro_2())
+    loop = asyncio.get_event_loop()
+    loop.set_task_factory(context.task_factory)  # This is the relevant line
+    loop.run_until_complete(my_coro_2())
 ```
 
-## Examples
+## Complete examples
 
-You can visit the [examples](examples) folder to check the source code but here are a couple of examples:
+If you've reached this point it means you are interested. Here are a couple of complete examples with
+`aiohttp`:
 
 - Setting the `X-Request-ID` header and sharing it over your code:
 
@@ -113,14 +120,16 @@ in all your code. If you run this script, you can try to query with curl or the 
 """
 
 import uuid
+import asyncio
+import aiotask_context as context
+
 from aiohttp import web
 
-from aiotask_context import context
 
 async def handle(request):
     name = request.match_info.get('name', "Anonymous")
     text = "Hello, {}. Your request id is {}.\n".format(name, context.get("X-Request-ID"))
-    return web.Response(body=text.encode('utf-8'))
+    return web.Response(text=text)
 
 
 async def request_id_middleware(app, handler):
@@ -133,7 +142,9 @@ async def request_id_middleware(app, handler):
 
 app = web.Application(middlewares=[request_id_middleware])
 app.router.add_route('GET', '/{name}', handle)
-web.run_app(app)
+loop = asyncio.get_event_loop()
+loop.set_task_factory(context.task_factory)
+web.run_app(app, loop=loop)
 ```
 
 - Setting the request_id in all log calls:
@@ -159,11 +170,12 @@ In the terminal you should see something similar to:
   2016-09-07 12:02:39,890 INFO aiohttp.access:405 357ab21e-5f05-44eb-884b-0ce3ceebc1ce | 127.0.0.1 - - [07/Sep/2016:10:02:39 +0000] "GET /Manuel HTTP/1.1" 200 70 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36"
 """
 
+import asyncio
 import uuid
 import logging.config
+import aiotask_context as context
 
 from aiohttp import web
-from aiotask_context import context
 
 
 class RequestIdFilter(logging.Filter):
@@ -219,13 +231,13 @@ async def handle(request):
 
     name = request.match_info.get('name')
 
-    await first_call()
+    await asyncio.gather(first_call())
     await second_call()
     logger.info("Received new GET /{} call".format(name))
 
     text = "Hello, {}. Your request id is {}.\n".format(name, context.get("X-Request-ID"))
 
-    return web.Response(body=text.encode('utf-8'))
+    return web.Response(text=text)
 
 
 async def request_id_middleware(app, handler):
@@ -240,10 +252,7 @@ async def request_id_middleware(app, handler):
 if __name__ == "__main__":
     app = web.Application(middlewares=[request_id_middleware])
     app.router.add_route('GET', '/{name}', handle)
-    web.run_app(app)
+    loop = asyncio.get_event_loop()
+    loop.set_task_factory(context.task_factory)
+    web.run_app(app, loop=loop)
 ```
-
-
-## Future work
-
-The library currently supports only the `await` calls. All the other calls that are returning a new `asyncio.Task` object instance like `asyncio.ensure_future`, `asyncio.call_later`, etc are not passing the context object from the parent to the child. In the future versions, the intention is to wrap or monkeypatch all this calls in order to pass the context object if available.
