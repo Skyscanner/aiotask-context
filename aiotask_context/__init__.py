@@ -23,17 +23,20 @@ def task_factory(loop, coro):
 def get(key, default=None):
     """
     Retrieves the value stored in key from the Task.context dict. If key does not exist,
-    or there is no event loop running, default will be returned
+    default will be returned
 
     :param key: identifier for accessing the context dict.
     :param default: None by default, returned in case key is not found.
     :return: Value stored inside the dict[key].
+    :raises ValueError: if loop cant be found
     """
-    task = asyncio.Task.current_task()
-    if task:
+    if not asyncio.Task.current_task():
+        raise ValueError('No event loop found')
+
+    try:
         return asyncio.Task.current_task().context.get(key, default)
-    else:
-        raise ValueError("No event loop found, key %s couldn't be set" % key)
+    except (AttributeError, KeyError):
+        return default
 
 
 def set(key, value):
@@ -42,10 +45,13 @@ def set(key, value):
 
     :param key: identifier for accessing the context dict.
     :param value: value to store inside context[key].
-    :raises
+    :raises ValueError: if loop cant be found
     """
-    task = asyncio.Task.current_task()
-    if task:
+    if not asyncio.Task.current_task():
+        raise ValueError('No event loop found')
+
+    try:
         asyncio.Task.current_task().context[key] = value
-    else:
-        raise ValueError("No event loop found, key %s couldn't be set" % key)
+    except AttributeError:
+        logger.warning("context dict not exists, creating it")
+        asyncio.Task.current_task().context = {key: value}
