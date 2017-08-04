@@ -31,14 +31,38 @@ class TestContext:
 
     @pytest.mark.asyncio
     @asyncio.coroutine
+    def test_get_without_factory(self, event_loop):
+        event_loop.set_task_factory(None)
+
+        @asyncio.coroutine
+        def coro():
+            assert context.get("key") is None
+            assert context.get("key", default='default') == "default"
+
+        yield from asyncio.ensure_future(coro())
+
+    @pytest.mark.asyncio
+    @asyncio.coroutine
     def test_set(self):
         context.set("key", "value")
         context.set("key", "updated_value")
         assert context.get("key") == "updated_value"
 
+    @pytest.mark.asyncio
+    @asyncio.coroutine
+    def test_set_without_factory(self, event_loop):
+        event_loop.set_task_factory(None)
+
+        @asyncio.coroutine
+        def coro():
+            context.set("key", "default")
+            assert context.get("key") == "default"
+
+        yield from asyncio.ensure_future(coro())
+
     def test_get_without_loop(self):
         with pytest.raises(ValueError):
-            context.get("key")
+            context.get("random")
 
     def test_set_without_loop(self):
         with pytest.raises(ValueError):
