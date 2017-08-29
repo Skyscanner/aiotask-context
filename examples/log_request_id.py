@@ -23,9 +23,10 @@ In the terminal you should see something similar to:
 
 import uuid
 import logging.config
+import asyncio
 
 from aiohttp import web
-from aiotask_context import context
+import aiotask_context as context
 
 
 class RequestIdFilter(logging.Filter):
@@ -100,6 +101,8 @@ async def request_id_middleware(app, handler):
 
 
 if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.set_task_factory(context.task_factory)
     app = web.Application(middlewares=[request_id_middleware])
     app.router.add_route('GET', '/{name}', handle)
     web.run_app(app)
