@@ -47,10 +47,10 @@ class TestContext:
     def test_loop_bug_aiohttp(self, event_loop):
 
         @asyncio.coroutine
-        def coro():
-            yield from asyncio.ensure_future(asyncio.sleep(0))
+        def coro(loop):
+            yield from asyncio.sleep(0, loop=loop)
             return True
 
-        assert event_loop.run_until_complete(coro()) is True
+        assert event_loop.run_until_complete(coro(event_loop)) is True
         asyncio.set_event_loop(None)
-        assert event_loop.run_until_complete(coro()) is True
+        assert event_loop.run_until_complete(coro(event_loop)) is True
