@@ -5,7 +5,7 @@ tests_require = install_requires + ['pytest']
 
 setup(
     name="aiotask_context",
-    version="0.4.1",
+    version="0.4.2",
     author="Manuel Miranda",
     author_email="manu.mirandad@gmail.com",
     description="Store context information inside the asyncio.Task object",
