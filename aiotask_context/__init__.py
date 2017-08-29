@@ -13,7 +13,7 @@ def task_factory(loop, coro):
         del task._source_traceback[-1]
 
     try:
-        task.context = asyncio.Task.current_task().context
+        task.context = asyncio.Task.current_task(loop=loop).context
     except AttributeError:
         task.context = {}
 

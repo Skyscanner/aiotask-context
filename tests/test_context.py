@@ -43,3 +43,14 @@ class TestContext:
     def test_set_without_loop(self):
         with pytest.raises(ValueError):
             context.set("random", "value")
+
+    def test_loop_bug_aiohttp(self, event_loop):
+
+        @asyncio.coroutine
+        def coro():
+            yield from asyncio.ensure_future(asyncio.sleep(0))
+            return True
+
+        assert event_loop.run_until_complete(coro()) is True
+        asyncio.set_event_loop(None)
+        assert event_loop.run_until_complete(coro()) is True
