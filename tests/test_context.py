@@ -54,3 +54,9 @@ class TestContext:
         assert event_loop.run_until_complete(coro(event_loop)) is True
         asyncio.set_event_loop(None)
         assert event_loop.run_until_complete(coro(event_loop)) is True
+
+
+    def test_closed_loop(self, event_loop):
+        event_loop.close()
+        with pytest.raises(RuntimeError):
+            context.task_factory(event_loop, dummy())
