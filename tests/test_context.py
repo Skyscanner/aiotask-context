@@ -1,14 +1,17 @@
 import pytest
 import asyncio
+import traceback
+
 import aiotask_context as context
 
 
 @asyncio.coroutine
 def dummy(t=0):
     yield from asyncio.sleep(t)
+    return True
 
 
-class TestContext:
+class TestSetGet:
 
     @pytest.mark.asyncio
     @asyncio.coroutine
@@ -45,17 +48,37 @@ class TestContext:
             context.set("random", "value")
 
     def test_loop_bug_aiohttp(self, event_loop):
-
-        @asyncio.coroutine
-        def coro(loop):
-            yield from asyncio.sleep(0, loop=loop)
-            return True
-
-        assert event_loop.run_until_complete(coro(event_loop)) is True
+        assert event_loop.run_until_complete(dummy()) is True
         asyncio.set_event_loop(None)
-        assert event_loop.run_until_complete(coro(event_loop)) is True
+        assert event_loop.run_until_complete(dummy()) is True
 
     def test_closed_loop(self, event_loop):
         event_loop.close()
         with pytest.raises(RuntimeError):
             context.task_factory(event_loop, dummy())
+
+
+class TestTaskFactory:
+
+    @pytest.mark.asyncio
+    async def test_propagates_context(self, event_loop):
+        context.set('key', 'value')
+        task = context.task_factory(event_loop, dummy())
+        task.cancel()
+
+        assert task.context == {'key': 'value'}
+
+    @pytest.mark.asyncio
+    async def test_sets_empty_context(self, event_loop):
+        task = context.task_factory(event_loop, dummy())
+        task.cancel()
+
+        assert task.context == {}
+
+    @pytest.mark.asyncio
+    async def test_sets_traceback(self, event_loop):
+        event_loop.set_debug(True)
+        task = context.task_factory(event_loop, dummy())
+        task.cancel()
+
+        assert isinstance(task._source_traceback, traceback.StackSummary)

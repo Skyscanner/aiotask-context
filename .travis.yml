@@ -1,8 +1,8 @@
 language: python
 
 python:
-  - "3.4.4"
   - "3.5"
+  - "3.6"
 
 install:
   - pip install -r requirements-ci.txt
@@ -10,4 +10,4 @@ install:
 script:
   - make syntax
   - python setup.py develop
-  - make cov
+  - make test

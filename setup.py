@@ -11,8 +11,8 @@ setup(
     description="Store context information inside the asyncio.Task object",
     classifiers=[
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
     ],
     packages=['aiotask_context'],
     install_requires=install_requires,
