@@ -6,8 +6,10 @@ logger = logging.getLogger(__name__)
 
 
 def task_factory(loop, coro):
+    # For uvloop loop._check_closed is private
+    if loop.is_closed():
+        raise RuntimeError('Event loop is closed')
 
-    loop._check_closed()
     task = asyncio.tasks.Task(coro, loop=loop)
     if task._source_traceback:
         del task._source_traceback[-1]
