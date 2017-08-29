@@ -10,9 +10,9 @@ in all your code. If you run this script, you can try to query with curl or the 
 """
 
 import uuid
-
+import asyncio
 from aiohttp import web
-from aiotask_context import context
+import aiotask_context as context
 
 
 def handle(request):
@@ -31,6 +31,8 @@ async def request_id_middleware(app, handler):
 
 
 if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.set_task_factory(context.task_factory)
     app = web.Application(middlewares=[request_id_middleware])
     app.router.add_route('GET', '/{name}', handle)
     web.run_app(app)
