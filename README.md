@@ -4,6 +4,8 @@
 
 Store context information within the [asyncio.Task](https://docs.python.org/3/library/asyncio-task.html#task) object. For more information about why this package was developed, please read the blog post [From Flask to aiohttp](http://codevoyagers.com/2016/09/01/from-flask-to-aiohttp/).
 
+Supports both asyncio and uvloop loops.
+
 ## Installation
 
 ```bash
