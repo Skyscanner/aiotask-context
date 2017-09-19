@@ -82,3 +82,17 @@ class TestTaskFactory:
         task.cancel()
 
         assert isinstance(task._source_traceback, traceback.StackSummary)
+
+    @pytest.mark.asyncio
+    async def test_propagates_copy_of_context(self, event_loop):
+        @asyncio.coroutine
+        def adds_to_context():
+            context.set('foo', 'bar')
+            return True
+
+        context.set('key', 'value')
+        task = context.copying_task_factory(event_loop, adds_to_context())
+        await task
+
+        assert task.context == {'key': 'value', 'foo': 'bar'}
+        assert context.get('foo') is None

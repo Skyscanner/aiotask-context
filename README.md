@@ -102,6 +102,41 @@ if __name__ == '__main__':
     loop.run_until_complete(my_coro_2())
 ```
 
+You may also want to only keep a copy of the context between calls. For example, you have one task that spawns many others and do not want to reflect changes in one task's context into the other tasks.
+To do this use the copying_task_context:
+
+```python
+import asyncio
+import aiotask_context as context
+
+
+async def my_coro_0():
+    context.set("status", "FAILED")
+    print("0: " + context.get("status"))
+
+async def my_coro_1():
+    context.set("status", "PENDING")
+    print("1: " + context.get("status"))
+    await my_coro_1_child()
+
+
+async def my_coro_1_child():
+    print("1 (child): " + context.get("status"))
+
+async def my_coro_spawner():
+    context.set("status", "RUNNING")
+    print("2: " + context.get("status"))
+    await asyncio.gather(asyncio.ensure_future(my_coro_1()), my_coro_0())
+    print("2: " + context.get("status"))
+
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.set_task_factory(context.copying_task_factory)  # This is the relevant line
+    loop.run_until_complete(my_coro_spawner())
+```
+
+
 ## Complete examples
 
 If you've reached this point it means you are interested. Here are a couple of complete examples with
