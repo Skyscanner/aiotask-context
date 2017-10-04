@@ -5,6 +5,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+NO_LOOP_EXCEPTION_MSG = "No event loop found, key {} couldn't be set"
+
+
 def task_factory(loop, coro):
     task = asyncio.tasks.Task(coro, loop=loop)
     if task._source_traceback:
@@ -27,11 +30,10 @@ def get(key, default=None):
     :param default: None by default, returned in case key is not found.
     :return: Value stored inside the dict[key].
     """
-    task = asyncio.Task.current_task()
-    if task:
-        return asyncio.Task.current_task().context.get(key, default)
-    else:
-        raise ValueError("No event loop found, key %s couldn't be set" % key)
+    if not asyncio.Task.current_task():
+        raise ValueError(NO_LOOP_EXCEPTION_MSG.format(key))
+
+    return asyncio.Task.current_task().context.get(key, default)
 
 
 def set(key, value):
@@ -42,8 +44,7 @@ def set(key, value):
     :param value: value to store inside context[key].
     :raises
     """
-    task = asyncio.Task.current_task()
-    if task:
-        asyncio.Task.current_task().context[key] = value
-    else:
-        raise ValueError("No event loop found, key %s couldn't be set" % key)
+    if not asyncio.Task.current_task():
+        raise ValueError(NO_LOOP_EXCEPTION_MSG.format(key))
+
+    asyncio.Task.current_task().context[key] = value
