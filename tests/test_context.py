@@ -96,3 +96,17 @@ class TestTaskFactory:
 
         assert task.context == {'key': 'value', 'foo': 'bar'}
         assert context.get('foo') is None
+
+    @pytest.mark.asyncio
+    async def test_propagates_chainmap_context(self, event_loop):
+        @asyncio.coroutine
+        def adds_to_context():
+            context.set('foo', 'bar')
+            return True
+
+        context.set('key', 'value')
+        task = context.chainmap_task_factory(event_loop, adds_to_context())
+        await task
+
+        assert task.context == {'key': 'value', 'foo': 'bar'}
+        assert context.get('foo') is None
