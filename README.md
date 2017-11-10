@@ -142,7 +142,7 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     for factory in (context.copying_task_factory,
                     context.chainmap_task_factory):
-        print('\nUisng', factory.__name__)
+        print('\nUsing', factory.__name__)
         loop.set_task_factory(factory)  # This is the relevant line
         loop.run_until_complete(my_coro_spawner())
 ```
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     for factory in (context.task_factory,
                     context.copying_task_factory,
                     context.chainmap_task_factory):
-        print('\nUisng', factory.__name__)
+        print('\nUsing', factory.__name__)
         loop.set_task_factory(factory)
         loop.run_until_complete(my_coro_parent(loop))
 ```
@@ -186,17 +186,17 @@ if __name__ == '__main__':
 In this case the results are different for all three:
 
 ```
-Uisng task_factory
+Using task_factory
 parent before: simple=from parent, complex=['from', 'parent']
 child: simple=from child, complex=['from', 'child']
 parent after: simple=from child, complex=['from', 'child']
 
-Uisng copying_task_factory
+Using copying_task_factory
 parent before: simple=from parent, complex=['from', 'parent']
 child: simple=from child, complex=['from', 'child']
 parent after: simple=from parent, complex=['from', 'parent']
 
-Uisng chainmap_task_factory
+Using chainmap_task_factory
 parent before: simple=from parent, complex=['from', 'parent']
 child: simple=from child, complex=['from', 'child']
 parent after: simple=from parent, complex=['from', 'child']
