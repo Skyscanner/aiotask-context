@@ -102,8 +102,16 @@ if __name__ == '__main__':
     loop.run_until_complete(my_coro_2())
 ```
 
-You may also want to only keep a copy of the context between calls. For example, you have one task that spawns many others and do not want to reflect changes in one task's context into the other tasks.
-To do this use the copying_task_context:
+You may also want to only keep a copy of the context between calls.
+For example, you have one task that spawns many others
+and do not want to reflect changes in one task's context into the other tasks.
+To do this you have two options:
+
+- `copying_task_factory` - uses a brand new copy of the context `dict` for *each* task
+- `chainmap_task_factory` - uses a `ChainMap` instead of a `dict` as context,
+    which allows some of the values to be redefined while not creating a full copy of the context
+
+The following example yields the same results with both:
 
 ```python
 import asyncio
@@ -132,10 +140,67 @@ async def my_coro_spawner():
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.set_task_factory(context.copying_task_factory)  # This is the relevant line
-    loop.run_until_complete(my_coro_spawner())
+    for factory in (context.copying_task_factory,
+                    context.chainmap_task_factory):
+        print('\nUsing', factory.__name__)
+        loop.set_task_factory(factory)  # This is the relevant line
+        loop.run_until_complete(my_coro_spawner())
 ```
 
+## Comparison of task factories / context types
+
+The difference between the task factories can be best illustrated by
+how they behave when inherited values are redefined or updated in child tasks.
+
+Consider:
+
+```python
+import asyncio
+import aiotask_context as context
+
+async def my_coro_parent(loop):
+    context.set("simple", "from parent")
+    context.set("complex", ["from", "parent"])
+    print("parent before: simple={}, complex={}".format(
+        context.get("simple"), context.get("complex")))
+    await loop.create_task(my_coro_child())
+    print("parent after: simple={}, complex={}".format(
+        context.get("simple"), context.get("complex")))
+
+async def my_coro_child():
+    context.set("simple", "from child")  # redefine value completely
+    context.get("complex")[1] = "child"  # update existing object
+    print("child: simple={}, complex={}".format(
+        context.get("simple"), context.get("complex")))
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    for factory in (context.task_factory,
+                    context.copying_task_factory,
+                    context.chainmap_task_factory):
+        print('\nUsing', factory.__name__)
+        loop.set_task_factory(factory)
+        loop.run_until_complete(my_coro_parent(loop))
+```
+
+In this case the results are different for all three:
+
+```
+Using task_factory
+parent before: simple=from parent, complex=['from', 'parent']
+child: simple=from child, complex=['from', 'child']
+parent after: simple=from child, complex=['from', 'child']
+
+Using copying_task_factory
+parent before: simple=from parent, complex=['from', 'parent']
+child: simple=from child, complex=['from', 'child']
+parent after: simple=from parent, complex=['from', 'parent']
+
+Using chainmap_task_factory
+parent before: simple=from parent, complex=['from', 'parent']
+child: simple=from child, complex=['from', 'child']
+parent after: simple=from parent, complex=['from', 'child']
+```
 
 ## Complete examples
 
