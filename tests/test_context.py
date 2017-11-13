@@ -11,6 +11,11 @@ def dummy(t=0):
     return True
 
 
+@asyncio.coroutine
+def return_key():
+    return context.get('key')
+
+
 class TestSetGet:
 
     @pytest.mark.asyncio
@@ -31,6 +36,14 @@ class TestSetGet:
     def test_get_missing_context(self):
         assert context.get("key", "default") == "default"
         assert context.get("key") is None
+
+    @pytest.mark.asyncio
+    @asyncio.coroutine
+    def test_getset_arbitrary_task(self):
+        task = asyncio.get_event_loop().create_task(return_key())
+        context.set('key', 'some key', task=task)
+        result = yield from task
+        assert result == 'some key'
 
     @pytest.mark.asyncio
     @asyncio.coroutine
