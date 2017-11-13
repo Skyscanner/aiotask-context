@@ -41,7 +41,7 @@ def dummy1(n_tasks):
 @asyncio.coroutine
 def test_ensure_future_concurrent():
     n_tasks = 10
-    results = yield from asyncio.gather(*[dummy1(n_tasks=n_tasks) for x in range(1000)])
+    results = yield from asyncio.gather(*[dummy1(n_tasks=n_tasks) for _ in range(1000)])
     for r in results:
         assert len(r) == 1
         for key, value in r.items():
