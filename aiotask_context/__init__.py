@@ -113,3 +113,15 @@ def set(key, value):
         raise ValueError(NO_LOOP_EXCEPTION_MSG.format(key))
 
     asyncio.Task.current_task().context[key] = value
+
+
+def clear():
+    """
+    Clear the Task.context.
+
+    :raises ValueError: if no current task.
+    """
+    if not asyncio.Task.current_task():
+        raise ValueError("No event loop found")
+
+    asyncio.Task.current_task().context.clear()

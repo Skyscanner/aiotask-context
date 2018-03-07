@@ -11,7 +11,7 @@ def dummy(t=0):
     return True
 
 
-class TestSetGet:
+class TestSetGetClear:
 
     @pytest.mark.asyncio
     @asyncio.coroutine
@@ -56,6 +56,19 @@ class TestSetGet:
         event_loop.close()
         with pytest.raises(RuntimeError):
             context.task_factory(event_loop, dummy())
+
+    @pytest.mark.asyncio
+    @asyncio.coroutine
+    def test_clear(self):
+        context.set("key", "value")
+        assert context.get("key") == "value"
+
+        context.clear()
+        assert context.get("key") is None
+
+    def test_clear_without_loop(self):
+        with pytest.raises(ValueError):
+            context.clear()
 
 
 class TestTaskFactory:
