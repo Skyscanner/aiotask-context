@@ -242,11 +242,11 @@ async def request_id_middleware(app, handler):
         return response
     return middleware_handler
 
-app = web.Application(middlewares=[request_id_middleware])
-app.router.add_route('GET', '/{name}', handle)
 loop = asyncio.get_event_loop()
 loop.set_task_factory(context.task_factory)
-web.run_app(app, loop=loop)
+app = web.Application(middlewares=[request_id_middleware], loop=loop)
+app.router.add_route('GET', '/{name}', handle)
+web.run_app(app)
 ```
 
 - Setting the request_id in all log calls:
@@ -352,9 +352,9 @@ async def request_id_middleware(app, handler):
 
 
 if __name__ == "__main__":
-    app = web.Application(middlewares=[request_id_middleware])
-    app.router.add_route('GET', '/{name}', handle)
     loop = asyncio.get_event_loop()
     loop.set_task_factory(context.task_factory)
-    web.run_app(app, loop=loop)
+    app = web.Application(middlewares=[request_id_middleware], loop=loop)
+    app.router.add_route('GET', '/{name}', handle)
+    web.run_app(app)
 ```
