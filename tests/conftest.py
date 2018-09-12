@@ -8,16 +8,22 @@ import aiotask_context as context
 
 @pytest.fixture()
 def asyncio_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    asyncio.set_event_loop_policy(None)
+    loop = asyncio.get_event_loop()
     yield loop
     loop.close()
+    # restore the virgin state
+    asyncio.set_event_loop_policy(None)
 
 
 @pytest.fixture()
 def uvloop_loop():
-    loop = uvloop.new_event_loop()
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    loop = asyncio.get_event_loop()
     yield loop
     loop.close()
+    # restore the virgin state
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
 @pytest.fixture(params=[
@@ -25,7 +31,7 @@ def uvloop_loop():
     'uvloop_loop'
 ])
 def event_loop(request):
-    return request.getfuncargvalue(request.param)
+    return request.getfixturevalue(request.param)
 
 
 @pytest.fixture(autouse=True)

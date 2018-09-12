@@ -28,7 +28,8 @@ def dummy2(a, b):
 def dummy1(n_tasks):
     context.set("key", str(uuid.uuid4()))
     tasks = [
-        asyncio.ensure_future(dummy2(id(asyncio.Task.current_task()), n)) for n in range(n_tasks)]
+        asyncio.ensure_future(
+            dummy2(id(context.asyncio_current_task()), n)) for n in range(n_tasks)]
     results = yield from asyncio.gather(*tasks)
     info = defaultdict(list)
     for taskid, n, key in results:
