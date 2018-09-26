@@ -1,8 +1,22 @@
 import asyncio
 import logging
+import sys
 from collections import ChainMap
-from functools import partial
 from copy import deepcopy
+from functools import partial
+
+PY37 = sys.version_info >= (3, 7)
+
+if PY37:
+    def asyncio_current_task(loop=None):
+        """Return the current task or None."""
+        try:
+            return asyncio.current_task(loop)
+        except RuntimeError:
+            # simulate old behaviour
+            return None
+else:
+    asyncio_current_task = asyncio.Task.current_task
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +68,7 @@ def task_factory(loop, coro, copy_context=False, context_factory=None):
         del task._source_traceback[-1]
 
     try:
-        context = asyncio.Task.current_task(loop=loop).context
+        context = asyncio_current_task(loop=loop).context
     except AttributeError:
         context = None
 
@@ -95,10 +109,11 @@ def get(key, default=None):
     :param default: None by default, returned in case key is not found.
     :return: Value stored inside the dict[key].
     """
-    if not asyncio.Task.current_task():
+    current_task = asyncio_current_task()
+    if not current_task:
         raise ValueError(NO_LOOP_EXCEPTION_MSG.format(key))
 
-    return asyncio.Task.current_task().context.get(key, default)
+    return current_task.context.get(key, default)
 
 
 def set(key, value):
@@ -109,10 +124,11 @@ def set(key, value):
     :param value: value to store inside context[key].
     :raises
     """
-    if not asyncio.Task.current_task():
+    current_task = asyncio_current_task()
+    if not current_task:
         raise ValueError(NO_LOOP_EXCEPTION_MSG.format(key))
 
-    asyncio.Task.current_task().context[key] = value
+    current_task.context[key] = value
 
 
 def clear():
@@ -121,7 +137,8 @@ def clear():
 
     :raises ValueError: if no current task.
     """
-    if not asyncio.Task.current_task():
+    current_task = asyncio_current_task()
+    if not current_task:
         raise ValueError("No event loop found")
 
-    asyncio.Task.current_task().context.clear()
+    current_task.context.clear()

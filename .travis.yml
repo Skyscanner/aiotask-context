@@ -4,10 +4,14 @@ python:
   - "3.5"
   - "3.6"
 
-install:
-  - pip install -r requirements-ci.txt
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial
+      sudo: true
 
-script:
+install: pip install tox-travis flake8
+
+script: tox
   - make syntax
-  - python setup.py develop
-  - make test
+  - tox
