@@ -17,6 +17,5 @@ setup(
     ],
     packages=['aiotask_context'],
     install_requires=install_requires,
-    setup_requires=['pytest-runner'],
     tests_require=tests_require,
 )
